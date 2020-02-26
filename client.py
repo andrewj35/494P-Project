@@ -12,7 +12,6 @@ server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 IP_address = "0.0.0.0"
 Port = 6677
 server.connect((IP_address, Port)) 
-  
 while True: 
     # maintains a list of possible input streams 
     sockets_list = [sys.stdin, server] 
