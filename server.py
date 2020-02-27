@@ -39,19 +39,22 @@ def clientthread(conn, addr):
 # loop in which we will get a unique username to add to our list of users
     conn.send("Enter username: ")
     while True:
-      username = conn.recv(2048)
-      if username:
+      try:
+        username = conn.recv(2048)
+        if username:
 # gets rid of whitespace for clearer unique names
-        username = username.strip()
-        if username not in usernames:
-          try:
-            usernames.append(username)
-            break
-          except:
-            continue
+          username = username.strip()
+          if username not in usernames:
+            try:
+              usernames.append(username)
+              break
+            except:
+              continue
 # when someone is trying to create duplicate username
-        else:
-          conn.send("Username already exists!\nEnter new username: ")
+          else:
+            conn.send("Username already exists!\nEnter new username: ")
+      except:
+        continue
 
     print username + " has joined the room"
     # sends a message to the client whose user object is conn 
@@ -95,8 +98,10 @@ def clientthread(conn, addr):
                 else: 
                   """message may have no content if the connection 
                   is broken, in this case we remove the connection"""
-                  remove(conn) 
+                  remove(conn, addr, username) 
             except: 
+# handles client connection lost (crash)
+              remove_from_lists(conn, addr, username) 
               continue
 
 # message to be broadcast to all the users in the server
@@ -110,16 +115,21 @@ def broadcast(message, connection, addr, username):
                 # if the link is broken, we remove the client 
                 remove(clients, addr, username) 
   
+# removes user from all the lists - connection has been lost
+def remove_from_lists(connection, addr, username):
+  if connection in list_of_clients:
+    list_of_clients.remove(connection) 
+    addrs.remove(addr[0])
+    usernames.remove(username)
+    print username + " has disconnected"
+    message_to_send = username + " has disconnected"
+    broadcast(message_to_send, connection)
+
 # removes user from server - based on connection, addr, and username
 def remove(connection, addr, username): 
-    if connection in list_of_clients: 
-        list_of_clients.remove(connection) 
-        addrs.remove(addr[0])
-        usernames.remove(username)
-        print username + " has disconnected"
-        connection.send("You have been disconnected from the server\n")
-        message_to_send = addr[0] + " has disconnected"
-        broadcast(message_to_send, connection)
+  if connection in list_of_clients: 
+    remove_from_lists(connection, addr, username)
+    connection.send("You have been disconnected from the server\n")
   
 # actively listening for new clients who joining the server
 while True: 
