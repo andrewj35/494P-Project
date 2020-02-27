@@ -11,17 +11,8 @@ a continuous flow."""
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
   
-# checks whether sufficient arguments have been provided 
-#  if len(sys.argv) != 3: 
-#      print "Correct usage: script, IP address, port number"
-#      exit() 
-  
-# takes the first argument from command prompt as IP address 
 IP_address = "0.0.0.0"
 Port = 6677
-#  IP_address = str(sys.argv[1]) 
-#  Port = int(sys.argv[2]) 
-# takes second argument from command prompt as port number 
   
 """ binds the server to an entered IP address and at the 
 specified port number. The client must be aware of these parameters """
@@ -34,15 +25,19 @@ server.listen(100)
 list_of_clients = [] 
 addrs = []
 usernames = []
+# TODO decide how we're going ot handle chat room/users in chat rooms
+#dictionary of roomnames
+#roomnames = {}
+#dictionary of rooms
+rooms = {}
 
-#client.start(IP_address, Port)
-  
 def clientthread(conn, addr): 
+# loop in which we will get a unique username to add to our list of users
     conn.send("Enter username: ")
     while True:
       username = conn.recv(2048)
       if username:
-# can add a check to see if username is unique if we want
+# gets rid of whitespace for clearer unique names
         username = username.strip()
         if username not in usernames:
           try:
@@ -50,6 +45,7 @@ def clientthread(conn, addr):
             break
           except:
             continue
+# when someone is trying to create duplicate username
         else:
           conn.send("Username already exists!\nEnter new username: ")
 
@@ -60,15 +56,12 @@ def clientthread(conn, addr):
             try: 
                 message = conn.recv(2048) 
                 if message: 
+                    # gets rid of the '\n' char at end of message
                     message = message.strip('\n')
-                    """prints the message and address of the 
-                    user who just sent the message on the server 
-                    terminal"""
                     # disconnect user from server
                     if message == "/disconnect":
                       print "disconnecting user..."
                       remove(conn, addr, username)
-                      #break;
                     # print list of users to specific user
                     elif message == "/users":
                       user_list = "Users:\n"
@@ -76,6 +69,18 @@ def clientthread(conn, addr):
                         user_list = user_list + usernames[each] + "\n"
                       user_list = user_list + "---------------"
                       conn.send(user_list)
+# TODO create system of chat rooms that can be created -> associated with
+# names via dictionary (roomnames) and another dictionary (rooms) that contains
+# objects of users, anything else we might need
+                    elif message == "/rooms":
+# TODO create list of chat rooms created, this will print the list
+                    elif message == "/create_room":
+# TODO create function to create new chat room
+# user should automatically join and be an 'admin' such that they can destory the room
+                    elif message == "/leave":
+# TODO create leave room function like below - if an admin leaves a room it should destory
+# the room and kick all users that were in the chat room
+#                     leave_room(conn, addr, username)
                   # Calls broadcast function to send message to all 
                     else:
                       print "<" + username + "> " + message
@@ -88,9 +93,7 @@ def clientthread(conn, addr):
             except: 
               continue
 
-"""Using the below function, we broadcast the message to all 
-clients whose object is not the same as the one sending 
-the message """
+# message to be broadcast to all the users in the server
 def broadcast(message, connection, addr, username): 
     for clients in list_of_clients: 
         if clients != connection: 
@@ -101,9 +104,7 @@ def broadcast(message, connection, addr, username):
                 # if the link is broken, we remove the client 
                 remove(clients, addr, username) 
   
-"""The following function simply removes the object 
-from the list that was created at the beginning of  
-the program"""
+# removes user from server - based on connection, addr, and username
 def remove(connection, addr, username): 
     if connection in list_of_clients: 
         list_of_clients.remove(connection) 
@@ -114,20 +115,22 @@ def remove(connection, addr, username):
         message_to_send = addr[0] + " has disconnected"
         broadcast(message_to_send, connection)
   
+# actively listening for new clients who joining the server
 while True: 
     """Accepts a connection request and stores two parameters,  
     conn which is a socket object for that user, and addr  
     which contains the IP address of the client that just  
     connected"""
+# grab the connection id and address of the client that just joined
     conn, addr = server.accept() 
-    """Maintains a list of clients for ease of broadcasting 
-    a message to all available people in the chatroom"""
+# add client to list of clients
     list_of_clients.append(conn) 
-    # prints the address of the user that just connected 
+# add client addr to list of addresses
     addrs.append(addr[0])
     # creates and individual thread for every user  
     # that connects 
     start_new_thread(clientthread,(conn,addr))     
   
+# close connection to server for client
 conn.close() 
 server.close() 
