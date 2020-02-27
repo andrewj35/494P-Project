@@ -43,7 +43,7 @@ def clientthread(conn, addr):
       username = conn.recv(2048)
       if username:
 # can add a check to see if username is unique if we want
-        username = username.strip('\n')
+        username = username.strip()
         if username not in usernames:
           try:
             usernames.append(username)
