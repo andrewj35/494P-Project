@@ -22,14 +22,18 @@ server.bind((IP_address, Port))
 increased as per convenience."""
 server.listen(100) 
 
+# list of connections of clients
 list_of_clients = [] 
+# list of IP addresses of clients
 addrs = []
+# list of usernames for clients
 usernames = []
+
 # TODO decide how we're going ot handle chat room/users in chat rooms
 #dictionary of roomnames
 #roomnames = {}
 #dictionary of rooms
-rooms = {}
+#rooms = {}
 
 def clientthread(conn, addr): 
 # loop in which we will get a unique username to add to our list of users
@@ -72,19 +76,21 @@ def clientthread(conn, addr):
 # TODO create system of chat rooms that can be created -> associated with
 # names via dictionary (roomnames) and another dictionary (rooms) that contains
 # objects of users, anything else we might need
-                    elif message == "/rooms":
+                    #elif message == "/rooms":
 # TODO create list of chat rooms created, this will print the list
-                    elif message == "/create_room":
+                    #elif message == "/create_room":
 # TODO create function to create new chat room
 # user should automatically join and be an 'admin' such that they can destory the room
-                    elif message == "/leave":
+                    #elif message == "/leave":
 # TODO create leave room function like below - if an admin leaves a room it should destory
 # the room and kick all users that were in the chat room
 #                     leave_room(conn, addr, username)
                   # Calls broadcast function to send message to all 
                     else:
-                      print "<" + username + "> " + message
-                      message_to_send = "<" + username + "> " + message 
+# maybe output header for room message was sent from
+# i.e.                message_to_send = "<" + chatroom_name + "> " + ... 
+                      message_to_send = "" + username + ": " + message 
+                      print message_to_send
                       broadcast(message_to_send, conn, addr, username) 
                 else: 
                   """message may have no content if the connection 

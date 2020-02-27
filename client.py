@@ -4,14 +4,10 @@ import select
 import sys 
   
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
-#if len(sys.argv) != 3: 
-#    print "Correct usage: script, IP address, port number"
-#    exit() 
-#IP_address = str(sys.argv[1]) 
-#Port = int(sys.argv[2]) 
 IP_address = "0.0.0.0"
 Port = 6677
 server.connect((IP_address, Port)) 
+
 while True: 
     # maintains a list of possible input streams 
     sockets_list = [sys.stdin, server] 
@@ -38,6 +34,7 @@ while True:
             print message 
         else: 
             message = sys.stdin.readline() 
+            # send the message to the server
             server.send(message) 
             # written to only you
             sys.stdout.write("<You>") 
