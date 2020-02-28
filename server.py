@@ -3,37 +3,25 @@ import select
 import sys 
 from thread import *
 
-"""The first argument AF_INET is the address domain of the 
-socket. This is used when we have an Internet Domain with 
-any two hosts The second argument is the type of socket. 
-SOCK_STREAM means that data or characters are read in 
-a continuous flow."""
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
   
 IP_address = "0.0.0.0"
 Port = 6677
-  
-""" binds the server to an entered IP address and at the 
-specified port number. The client must be aware of these parameters """
 server.bind((IP_address, Port)) 
   
-""" listens for 100 active connections. This number can be 
-increased as per convenience."""
+# listens for 100 active connections
 server.listen(100) 
-
 # list of connections of clients
 list_of_clients = [] 
 # list of IP addresses of clients
 addrs = []
 # list of usernames for clients
 usernames = []
-
-# TODO decide how we're going ot handle chat room/users in chat rooms
-#dictionary of roomnames
-#roomnames = {}
-#dictionary of rooms
-#rooms = {}
+# list of rooms : contains name of room, conn and username of creator
+roomnames = []
+# list of rooms
+room = []
 
 def clientthread(conn, addr): 
 # loop in which we will get a unique username to add to our list of users
@@ -64,7 +52,7 @@ def clientthread(conn, addr):
                 message = conn.recv(2048) 
                 if message: 
                     # gets rid of the '\n' char at end of message
-                    message = message.strip('\n')
+                    message = message.strip()
                     # disconnect user from server
                     if message == "/disconnect":
                       print "disconnecting user..."
@@ -76,14 +64,17 @@ def clientthread(conn, addr):
                         user_list = user_list + usernames[each] + "\n"
                       user_list = user_list + "---------------"
                       conn.send(user_list)
-# TODO create system of chat rooms that can be created -> associated with
-# names via dictionary (roomnames) and another dictionary (rooms) that contains
-# objects of users, anything else we might need
-                    #elif message == "/rooms":
-# TODO create list of chat rooms created, this will print the list
-                    #elif message == "/create_room":
-# TODO create function to create new chat room
-# user should automatically join and be an 'admin' such that they can destory the room
+# print the list of chat room
+                    elif message == "/rooms":
+                      print "Printing list of chat rooms for " + username
+                      room_list = "List of Rooms:\n"
+                      for each in roomnames:
+                        room_list = room_list + each.name + "\n"
+                      room_list = room_list + "---------------"
+                      conn.send(room_list)
+# allows the user to create a new chat room
+                    elif message == "/create_room":
+                      create_room(conn, addr, username)
                     #elif message == "/leave":
 # TODO create leave room function like below - if an admin leaves a room it should destory
 # the room and kick all users that were in the chat room
@@ -96,13 +87,44 @@ def clientthread(conn, addr):
                       print message_to_send
                       broadcast(message_to_send, conn, addr, username) 
                 else: 
-                  """message may have no content if the connection 
-                  is broken, in this case we remove the connection"""
+# message having no content means the user has disconnected
+# also may handle client crashes
                   remove(conn, addr, username) 
             except: 
 # handles client connection lost (crash)
               remove_from_lists(conn, addr, username) 
               continue
+
+class chat_room:
+  def __init__(self, name, creator, conn):
+    self.name = name
+    self.creator = creator
+    self.conn = conn
+
+# create new chat room
+def create_room(conn, addr, username):
+  conn.send("Enter name of new chat room: ")
+  while True:
+    try:
+      name = conn.recv(2048)
+      if name:
+        name = name.strip()
+        if any(x.name == name for x in roomnames):
+          conn.send("Chat room of that name already exists!\nPlease enter a different name: ")
+        else:
+          roomnames.append(chat_room(name,username,conn))
+          print "chat room " + name + " has been created by " + username
+          conn.send("Room has been created!")
+          break
+      else:
+# make sure we can handle client crashes 
+        remove(conn, addr, username) 
+    except:
+      remove(conn, addr, username) 
+      continue
+
+# send message to specific chat room
+#def broadcast_room(conn, username, room):
 
 # message to be broadcast to all the users in the server
 def broadcast(message, connection, addr, username): 
@@ -128,15 +150,11 @@ def remove_from_lists(connection, addr, username):
 # removes user from server - based on connection, addr, and username
 def remove(connection, addr, username): 
   if connection in list_of_clients: 
-    remove_from_lists(connection, addr, username)
     connection.send("You have been disconnected from the server\n")
+    remove_from_lists(connection, addr, username)
   
 # actively listening for new clients who joining the server
 while True: 
-    """Accepts a connection request and stores two parameters,  
-    conn which is a socket object for that user, and addr  
-    which contains the IP address of the client that just  
-    connected"""
 # grab the connection id and address of the client that just joined
     conn, addr = server.accept() 
 # add client to list of clients

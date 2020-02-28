@@ -1,4 +1,3 @@
-# Python program to implement client side of chat room. 
 import socket 
 import select 
 import sys 
@@ -37,7 +36,7 @@ while True:
             # send the message to the server
             server.send(message) 
             # written to only you
-            sys.stdout.write("<You>") 
+            sys.stdout.write("<You> ") 
             sys.stdout.write(message) 
             sys.stdout.flush() 
 
