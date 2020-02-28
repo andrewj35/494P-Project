@@ -8,12 +8,9 @@ Extra Credit = EC
 Required = R
 R	- RFC document
 R	- server process (not sure what this means)
-R	X- client can join a room
-R	- client can leave a room
-R	X- client can list members of a room
-R	- client can send messages to a room
+R	X- client can leave a room
+R	X- client can send messages to a room
 R	- client can send distinct message to multiple (selected) rooms
-R	- client can join multiple (selected rooms) => headers for each room i.e. <room_name>
 R	- server/client can gracefully handle client/server crashes (need to get clarification on this)
 R	- Programming style - I assume clean, readable with comments for functions/variables
 
@@ -27,6 +24,9 @@ Extra?	- each room can have their own password or key to enter - needs list of a
 	  and users who are in the room (sub-user list per room)
 	  
 Finished tasks
+	- client can join multiple (selected rooms) --> they can be added to the list
+  - client can list members of a room
+  - client can join a room
 	- client can connect to a server
 	- client can create a room
 	- client can list all rooms

@@ -111,8 +111,11 @@ class chat_room:
     self.conn = conn
     self.users = []
     self.conns = []
-    self.users.append(name)
-    self.conns.append(conn)
+    self.users.append(name) # add creator to user list
+    self.conns.append(conn) # add creator conn to conns list
+
+# TODO add ability to leave chat room
+def leave_room(conn, addr, username):
 
 # print list of users in a specific chat room
 def print_room_users(conn, addr, username):
