@@ -41,6 +41,8 @@ def clientthread(conn, addr):
 # when someone is trying to create duplicate username
           else:
             conn.send("Username already exists!\nEnter new username: ")
+        else:
+          remove(conn, addr, "")
       except:
         continue
 
@@ -75,11 +77,15 @@ def clientthread(conn, addr):
 # allows the user to create a new chat room
                     elif message == "/create_room":
                       create_room(conn, addr, username)
+                    elif message == "/room_users":
+                      print_room_users(conn, addr, username)
+                    elif message == "/join":
+                      join_room(conn, addr, username)
                     #elif message == "/leave":
 # TODO create leave room function like below - if an admin leaves a room it should destory
 # the room and kick all users that were in the chat room
 #                     leave_room(conn, addr, username)
-                  # Calls broadcast function to send message to all 
+# Calls broadcast function to send message to all 
                     else:
 # maybe output header for room message was sent from
 # i.e.                message_to_send = "<" + chatroom_name + "> " + ... 
@@ -89,9 +95,12 @@ def clientthread(conn, addr):
                 else: 
 # message having no content means the user has disconnected
 # also may handle client crashes
+                  print "client thread else remove"
                   remove(conn, addr, username) 
+                  break
             except: 
 # handles client connection lost (crash)
+              print "client thread except remove"
               remove_from_lists(conn, addr, username) 
               continue
 
@@ -100,6 +109,72 @@ class chat_room:
     self.name = name
     self.creator = creator
     self.conn = conn
+    self.users = []
+    self.conns = []
+    self.users.append(name)
+    self.conns.append(conn)
+
+# print list of users in a specific chat room
+def print_room_users(conn, addr, username):
+  conn.send("Enter name of chat room: ")
+  while True:
+    try:
+      name = conn.recv(2048)
+      if name:
+        name = name.strip()
+        if any(x.name == name for x in roomnames):
+          for each in roomnames:
+            if each.name == name:
+              user_list = "Users:\n"
+              for user in each.users:
+                user_list = user_list + user + "\n"
+              user_list = user_list + "---------------"
+              print "printed client list for '" + name + "' chat room"
+              conn.send(user_list)
+              break # break out of for loop
+          break # break out of while loop
+        else:
+          conn.send("Chat room with that name doesn't exist!")
+          break
+      else:
+        print "print_room_users else remove"
+        remove(conn, addr, username)
+        break
+    except:
+      print "print_room_users except remove"
+      remove(conn, addr, username)
+      continue
+
+# try joining chat room
+def join_room(conn, addr, username):
+  conn.send("Enter name of chat room to join: ")
+  while True:
+    try:
+      name = conn.recv(2048)
+      if name:
+        name = name.strip()
+        if any(x.name == name for x in roomnames):
+          for each in roomnames:
+            if each.name == name:
+              if username not in each.users and conn not in each.conns:
+                each.users.append(username)
+                each.conns.append(conn)
+                print "added " + each.users[0] + " to " + name
+              else:
+                conn.send("You are already a member of that chat room!")
+              break # break out of for loop
+          break # break out of while loop, return to client thread
+        else:
+          conn.send("Chat room with that name doesn't exist!")
+          break
+      else:
+        print "join_room else remove"
+        remove(conn, addr, username)
+        break
+    except:
+      print "join_room except remove"
+      remove(conn, addr, username)
+      continue
 
 # create new chat room
 def create_room(conn, addr, username):
@@ -113,7 +188,7 @@ def create_room(conn, addr, username):
           conn.send("Chat room of that name already exists!\nPlease enter a different name: ")
         else:
           roomnames.append(chat_room(name,username,conn))
-          print "chat room " + name + " has been created by " + username
+          print "chat room '" + name + "' has been created by " + username
           conn.send("Room has been created!")
           break
       else:
@@ -141,11 +216,15 @@ def broadcast(message, connection, addr, username):
 def remove_from_lists(connection, addr, username):
   if connection in list_of_clients:
     list_of_clients.remove(connection) 
-    addrs.remove(addr[0])
-    usernames.remove(username)
-    print username + " has disconnected"
-    message_to_send = username + " has disconnected"
-    broadcast(message_to_send, connection)
+    if addr[0] in addrs: addrs.remove(addr[0])
+    if username in usernames: 
+      usernames.remove(username)
+      print username + " has disconnected"
+      message_to_send = username + " has disconnected"
+      broadcast(message_to_send, connection)
+    else:
+      print connection + " has disconnected"
+# don't need to announce someone that couldn't even type has left
 
 # removes user from server - based on connection, addr, and username
 def remove(connection, addr, username): 
