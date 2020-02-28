@@ -24,18 +24,18 @@ Extra Credit:
 Extra Stuff we could add:
 
   - delete chat room (I was thinking only the creator can or if the owner leaves we can promote some other member - or we can let the creator leaving choose someone to promote)
-	- each room can have their own password or key to enter - needs list of admin users and users who are in the room (sub-user list per room)
+  - each room can have their own password or key to enter - needs list of admin users and users who are in the room (sub-user list per room)
 	  
-Finished tasks
+Finished tasks:
 
-	- client can leave a room 
-	- client can join multiple (selected rooms) --> they can be added to the list, still need to add chat room only messages
+  - client can leave a room 
+  - client can join multiple (selected rooms) --> they can be added to the list, still need to add chat room only messages
   - client can list members of a room
   - client can join a room
-	- client can connect to a server
-	- client can create a room
-	- client can list all rooms
-	- client can list members of server (not room yet)
-	- multiple clients can connect to a server
-	- client can disconnect from a server
-	- server can disconnect from clients
+  - client can connect to a server
+  - client can create a room
+  - client can list all rooms
+  - client can list members of server (not room yet)
+  - multiple clients can connect to a server
+  - client can disconnect from a server
+  - server can disconnect from clients

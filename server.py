@@ -20,6 +20,17 @@ addrs = []
 usernames = []
 # list of rooms : contains name of room, conn and username of creator
 roomnames = []
+# list of commands : need to add new commands here so we can list them to make it easy for client
+commands = ["/commands", "/disconnect", "/users", "/rooms", "/create", "/list", "/join", "/leave"]
+# list of descriptions for what commands do
+command_descriptions = ["Prints list of commands.", 
+"Disconnects client from the server.",
+"Prints list of users in the server.",
+"Prints list of chatrooms.",
+"Prompts user to input name of chatroom they want to create, if it doesn\'t already exist, creates new chatroom with that name.",
+"Prompts user to input name of chatroom they want to list users of, if it exists, prints list of users in that chatroom.",
+"Prompts user to input name of chatroom they want to join, if it exists, they are added to the user list.",
+"Prompts user to input name of chatroom they want to leave, if it exists and they are a member, removes them from the chatroom."]
 
 def clientthread(conn, addr): 
 # loop in which we will get a unique username to add to our list of users
@@ -46,15 +57,23 @@ def clientthread(conn, addr):
 
     print username + " has joined the room"
     # sends a message to the client whose user object is conn 
-    conn.send("Welcome " + username + "!") 
+    conn.send("Welcome " + username + "!\nEnter /commands to see list of commands with their description.") 
     while True: 
             try: 
                 message = conn.recv(2048) 
                 if message: 
 # gets rid of the '\n' char at end of message
                     message = message.strip()
+                    if message == "/commands":
+                      command_list = "Commands:\n"
+                      print range(len(commands))
+                      for each in range(len(commands)):
+                        print commands[each]
+                        command_list = command_list + commands[each] + "\n" + command_descriptions[each] + "\n\n"
+                      command_list = command_list + "---------------"
+                      conn.send(command_list)
 # disconnect user from server
-                    if message == "/disconnect":
+                    elif message == "/disconnect":
                       print "disconnecting user..."
                       remove(conn, addr, username)
                     # print list of users to specific user
