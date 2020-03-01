@@ -34,91 +34,98 @@ command_descriptions = ["List of commands.",
 
 def clientthread(conn, addr): 
 # loop in which we will get a unique username to add to our list of users
-    conn.send("Enter username: ")
-    while True:
-      try:
-        username = conn.recv(2048)
-        if username:
+  conn.send("Enter username: ")
+  while True:
+    try:
+      username = conn.recv(2048)
+      if username:
 # gets rid of whitespace for clearer unique names
-          username = username.strip()
-          if username not in usernames:
-            try:
-              usernames.append(username)
-              break
-            except:
-              continue
+        username = username.strip()
+        if username not in usernames:
+          try:
+            usernames.append(username)
+            break
+          except:
+            continue
 # when someone is trying to create duplicate username
-          else:
-            conn.send("Username already exists!\nEnter new username: ")
         else:
-          remove(conn, addr, "")
-      except:
-        continue
+          conn.send("Username already exists!\nEnter new username: ")
+      else:
+        remove(conn, addr, "")
+    except:
+      continue
 
-    print username + " joined the server"
-    # sends a message to the client whose user object is conn 
-    conn.send("Welcome " + username + "!\nEnter /commands to see list of commands with their description.") 
-    while True: 
-      try: 
-        message = conn.recv(2048) 
-        if message: 
+  print username + " joined the server"
+  # sends a message to the client whose user object is conn 
+  conn.send("Welcome " + username + "!\nEnter /commands to see list of commands with their description.") 
+  while True: 
+    try: 
+      message = conn.recv(2048) 
+      if message: 
 # gets rid of the '\n' char at end of message
-          message = message.strip()
-          if message == "/commands":
-            command_list = "Commands:\n"
-            for each in range(len(commands)):
-              command_list = command_list + commands[each] + "\n - " + command_descriptions[each] + "\n"
-              command_list = command_list + "---------------"
-            conn.send(command_list)
+        message = message.strip()
+        if message == commands[0]:
+          command_list = "Commands:\n"
+          for each in range(len(commands)):
+            command_list = command_list + commands[each] + "\n - " + command_descriptions[each] + "\n"
+          command_list = command_list + "---------------"
+          conn.send(command_list)
 # disconnect user from server
-          elif message == "/disconnect":
-            print "disconnecting user..."
-            remove(conn, addr, username)
-          # print list of users to specific user
-          elif message == "/users":
-            user_list = "Users:\n"
-            for each in range(len(usernames)):
-              user_list = user_list + usernames[each] + "\n"
-            user_list = user_list + "---------------"
-            conn.send(user_list)
+        elif message == commands[1]:
+          print "disconnecting user..."
+          remove(conn, addr, username)
+        # print list of users to specific user
+        elif message == commands[2]:
+          user_list = "Users:\n"
+          for each in range(len(usernames)):
+            user_list = user_list + usernames[each] + "\n"
+          user_list = user_list + "---------------"
+          conn.send(user_list)
 # print the list of chat room
-          elif message == "/rooms":
-            print "Printing list of chat rooms for " + username
-            room_list = "List of Rooms:\n"
-            for each in roomnames:
-              room_list = room_list + each.name + "\n"
-            room_list = room_list + "---------------"
-            conn.send(room_list)
+        elif message == commands[3]:
+          print "Printing list of chat rooms for " + username
+          room_list = "List of Rooms:\n"
+          for each in roomnames:
+            room_list = room_list + each.name + "\n"
+          room_list = room_list + "---------------"
+          conn.send(room_list)
 # allows the user to create a new chat room
-          elif message == "/create":
-            create_room(conn, addr, username)
+        elif message == commands[4]:
+          create_room(conn, addr, username)
 # allows user to list members of a chat room
-          elif message == "/list":
-            print_room_users(conn, addr, username)
+        elif message == commands[5]:
+          print_room_users(conn, addr, username)
 # allows user to join a chat room
-          elif message == "/join":
-            join_room(conn, addr, username)
+        elif message == commands[6]:
+          join_room(conn, addr, username)
 # allows user to leave a chat room if they're a member of input name
-          elif message == "/leave":
-            leave_room(conn, addr, username)
+        elif message == commands[7]:
+          leave_room(conn, addr, username)
 # Calls broadcast function to send message to all 
-          else:
+        else:
 # maybe output header for room message was sent from
 # i.e.      message_to_send = "<" + chatroom_name + "> " + ... 
-            message_to_send = "" + username + ": " + message 
-            print message_to_send
-            broadcast(message_to_send, conn, addr, username) 
-        else: 
+          message_to_send = "" + username + ": " + message 
+          print message_to_send
+          broadcast(message_to_send, conn, addr, username) 
+      else: 
 # message having no content means the user has disconnected
 # also may handle client crashes
-          print "client thread else remove"
-          remove(conn, addr, username) 
-          break
-      except: 
+        print "client thread else remove"
+        remove(conn, addr, username) 
+        break
+    except: 
 # handles client connection lost (crash)
-        print "client thread except remove"
-        remove_from_lists(conn, addr, username) 
-        continue
+      print "client thread except remove"
+      remove_from_lists(conn, addr, username) 
+      continue
+
+#TODO create function that removes user from all rooms they are a part of if they disconnect from server
+# special case if they're owner of a room - have to decide how we handle that case
+# def leave_all(conn, addr, username):
+
+# TODO send message to specific chat room
+#def broadcast_room(conn, username, room):
 
 class chat_room:
   def __init__(self, name, creator, conn):
@@ -129,10 +136,6 @@ class chat_room:
     self.conns = []
     self.users.append(creator) # add creator to user list
     self.conns.append(conn) # add creator conn to conns list
-
-#TODO create function that removes user from all rooms they are a part of if they disconnect from server
-# special case if they're owner of a room - have to decide how we handle that case
-# def leave_all(conn, addr, username):
 
 # allows user to leave chat room if they are a member
 def leave_room(conn, addr, username):
@@ -247,9 +250,6 @@ def create_room(conn, addr, username):
     except:
       remove(conn, addr, username) 
       continue
-
-# TODO send message to specific chat room
-#def broadcast_room(conn, username, room):
 
 # message to be broadcast to all the users in the server
 def broadcast(message, connection, addr, username): 
