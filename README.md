@@ -25,6 +25,7 @@ Extra Stuff we could add:
 
   - delete chat room (I was thinking only the creator can or if the owner leaves we can promote some other member - or we can let the creator leaving choose someone to promote)
   - each room can have their own password or key to enter - needs list of admin users and users who are in the room (sub-user list per room)
+  - decied how to handle when a client who is creator of a room disconnects (what we do with their chat room)
 	  
 Finished tasks:
 
