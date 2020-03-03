@@ -136,6 +136,8 @@ class chat_room:
     self.users.append(creator) # add creator to user list
     self.conns.append(conn) # add creator conn to conns list
 
+# TODO quick leave function for when user quits room
+# should remove all traces
 # allows user to leave chat room if they are a member
 def leave_room(conn, addr, username):
   conn.send("Enter name of chat room: ")
@@ -150,7 +152,7 @@ def leave_room(conn, addr, username):
             obj[0].users.remove(username)
             obj[0].conns.remove(conn)
             conn.send("You have left chat room : " + name)
-            print username + "has left chat room " + name
+            print username + " has left chat room " + name
             if obj[0].creator == username and obj[0].conn == conn:
               print username + " wants to delete '" + name + "'"
 # TODO delete room if the creator wants to leave the room OR come up with way to replace creator
