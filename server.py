@@ -144,20 +144,18 @@ def leave_room(conn, addr, username):
       name = conn.recv(2048)
       if name:
         name = name.strip()
-        if any(x.name == name for x in roomnames):
-          for each in roomnames:
-            if each.name == name:
-              if username in each.users and conn in each.conns:
-                each.users.remove(username)
-                each.conns.remove(conn)
-                conn.send("You have left chat room : " + name)
-                print username + "has left chat room " + name
-                if each.creator == username and each.conn == conn:
-                  print username + " wants to delete '" + name + "'"
+        obj = [x for x in roomnames if x.name == name]
+        if obj:
+          if username in obj[0].users:
+            obj[0].users.remove(username)
+            obj[0].conns.remove(conn)
+            conn.send("You have left chat room : " + name)
+            print username + "has left chat room " + name
+            if obj[0].creator == username and obj[0].conn == conn:
+              print username + " wants to delete '" + name + "'"
 # TODO delete room if the creator wants to leave the room OR come up with way to replace creator
-              else:
-                conn.send("No user with that name found in chat room: " + name)
-            break # break out of for loop
+          else:
+            conn.send("No user with that name found in chat room: " + name)
           break # break out of while loop
         else:
 #          print "leave_room else remove"

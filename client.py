@@ -3,6 +3,7 @@ import select
 import sys 
   
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+
 IP_address = "127.0.0.50"
 Port = 6677
 server.connect((IP_address, Port)) 
