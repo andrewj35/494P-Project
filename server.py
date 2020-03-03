@@ -5,8 +5,7 @@ from thread import *
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
-  
-IP_address = "0.0.0.0"
+IP_address = "127.0.0.50"
 Port = 6677
 server.bind((IP_address, Port)) 
   
@@ -33,13 +32,13 @@ command_descriptions = ["List of commands.",
 "Input name of chatroom they want to leave, if it exists and they are a member, removes them from the chatroom."]
 
 def clientthread(conn, addr): 
-# loop in which we will get a unique username to add to our list of users
+# get a unique username to add to our list of users
   conn.send("Enter username: ")
   while True:
     try:
       username = conn.recv(2048)
       if username:
-# gets rid of whitespace for clearer unique names
+# gets rid of whitespace for unique names
         username = username.strip()
         if username not in usernames:
           try:
@@ -47,7 +46,7 @@ def clientthread(conn, addr):
             break
           except:
             continue
-# when someone is trying to create duplicate username
+# if user tried to create duplicate username
         else:
           conn.send("Username already exists!\nEnter new username: ")
       else:
@@ -56,7 +55,7 @@ def clientthread(conn, addr):
       continue
 
   print username + " joined the server"
-  # sends a message to the client whose user object is conn 
+# sends a message to this client
   conn.send("Welcome " + username + "!\nEnter /commands to see list of commands with their description.") 
   while True: 
     try: 
@@ -74,7 +73,7 @@ def clientthread(conn, addr):
         elif message == commands[1]:
           print "disconnecting user..."
           remove(conn, addr, username)
-        # print list of users to specific user
+# print list of users 
         elif message == commands[2]:
           user_list = "Users:\n"
           for each in range(len(usernames)):
@@ -101,7 +100,7 @@ def clientthread(conn, addr):
 # allows user to leave a chat room if they're a member of input name
         elif message == commands[7]:
           leave_room(conn, addr, username)
-# Calls broadcast function to send message to all 
+# sends message to whole server
         else:
 # maybe output header for room message was sent from
 # i.e.      message_to_send = "<" + chatroom_name + "> " + ... 
@@ -111,12 +110,12 @@ def clientthread(conn, addr):
       else: 
 # message having no content means the user has disconnected
 # also may handle client crashes
-        print "client thread else remove"
+#        print "client thread else remove"
         remove(conn, addr, username) 
         break
     except: 
 # handles client connection lost (crash)
-      print "client thread except remove"
+#      print "client thread except remove"
       remove_from_lists(conn, addr, username) 
       continue
 
@@ -161,12 +160,12 @@ def leave_room(conn, addr, username):
             break # break out of for loop
           break # break out of while loop
         else:
-          print "leave_room else remove"
+#          print "leave_room else remove"
           conn.send("Chat room with that name wasn't found!")
           break
       else:
         print "leave_room else remove"
-        remove(conn, addr, username)
+#        remove(conn, addr, username)
         break
     except:
       print "print_room_users except remove"
@@ -193,11 +192,11 @@ def print_room_users(conn, addr, username):
           conn.send("Chat room with that name wasn't found!")
         break # break out of while loop
       else:
-        print "print_room_users else remove"
+#        print "print_room_users else remove"
         remove(conn, addr, username)
         break
     except:
-      print "print_room_users except remove"
+#      print "print_room_users except remove"
       remove(conn, addr, username)
       continue
 
@@ -221,11 +220,11 @@ def join_room(conn, addr, username):
           conn.send("Chat room with that name doesn't exist!")
         break # break out of while loop
       else:
-        print "join_room else remove"
+#        print "join_room else remove"
         remove(conn, addr, username)
         break
     except:
-      print "join_room except remove"
+#      print "join_room except remove"
       remove(conn, addr, username)
       continue
 
@@ -271,12 +270,13 @@ def remove_from_lists(connection, addr, username):
       usernames.remove(username)
       print username + " has disconnected"
       message_to_send = username + " has disconnected"
+# TODO remove user from all chat rooms they are a part of
       broadcast(message_to_send, connection)
     else:
       print connection + " has disconnected"
 # don't need to announce someone that couldn't even type has left
 
-# removes user from server - based on connection, addr, and username
+# removes user from server
 def remove(connection, addr, username): 
   if connection in list_of_clients: 
     connection.send("You have been disconnected from the server\n")
