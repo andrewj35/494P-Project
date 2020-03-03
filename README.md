@@ -7,8 +7,8 @@ Required:
 
 	- RFC document
 	- server process (not sure what this means)
-	- client can send messages to a room (J Working on this)
-	- client can send distinct message to multiple (selected) rooms (Might need clarification on this, is it per room or multiple at once)
+	- client can send messages to a room (J Similar to a channel)
+	- client can send distinct message to multiple (selected) rooms (Can specify which room to send to)
 	- server/client can gracefully handle client/server crashes (need to get clarification on this, may be done)
 	- Programming style - I assume clean, readable with comments for functions/variables
 
