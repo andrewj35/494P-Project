@@ -222,6 +222,7 @@ class chat_room:
 
 # TODO quick leave function for when user quits room
 # should remove all traces
+
 # allows user to leave chat room if they are a member
 def leave_room(conn, addr, username):
   conn.send("Enter name of chat room: ")
