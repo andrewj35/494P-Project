@@ -5,7 +5,11 @@ import os
   
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 
+<<<<<<< HEAD
 #IP_address = "0.0.0.0"
+=======
+#IP address of PSU
+>>>>>>> 9ec9f13731c096ca9983a093060580731424257f
 IP_address = "127.0.0.50"
 Port = 6677
 server.connect((IP_address, Port)) 
