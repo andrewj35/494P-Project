@@ -36,7 +36,7 @@ command_descriptions = ["List of commands.",
 "Input name of chatroom they want to join, if it exists, they are added to the user list.",
 "Input name of chatroom they want to leave, if it exists and they are a member, removes them from the chatroom.",
 "Input name of file to upload it to the server.",
-"Copies all files in the server to your directory"]
+"Copies all files in the server to your directory."]
 # list of users who are 'busy' so they shouldn't receive any messages
 busy = []
 
@@ -112,7 +112,9 @@ def clientthread(conn, addr):
 # allows user to upload a file to the server
         elif message == commands[8]:
           update_files(conn, addr, username)
-#          file_upload(conn, addr, username)
+# allows user to download files uploaded to server
+        elif message = commands[9]:
+          file_upload(conn, addr, username)
 # sends message to whole server
         else:
 # maybe output header for room message was sent from
