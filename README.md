@@ -7,7 +7,6 @@ Required:
 
 	- RFC document
 	- server process (not sure what this means)
-	- server/client can gracefully handle client/server crashes (need to get clarification on this, may be done)
 	- Programming style - I assume clean, readable with comments for functions/variables
 
 Extra Credit:
@@ -40,4 +39,5 @@ Finished:
   	- server can disconnect from clients
 	- client can send messages to a room (J Similar to a channel)
 	- client can send distinct message to multiple (selected) rooms (Can specify which room to send to)
+	- server/client can gracefully handle client/server crashes (Error message is given to both server and client)
 	- Programming style - I assume clean, readable with comments for functions/variables

@@ -317,17 +317,20 @@ def remove(connection, addr, username):
     remove_from_lists(connection, addr, username)
   
 # actively listening for new clients who joining the server
-while True: 
+while True:
+  try: 
 # grab the connection id and address of the client that just joined
-  conn, addr = server.accept() 
+    conn, addr = server.accept() 
 # add client to list of clients
-  list_of_clients.append(conn) 
+    list_of_clients.append(conn) 
 # add client addr to list of addresses
-  addrs.append(addr[0])
+    addrs.append(addr[0])
 # creates and individual thread for every user  
 # that connects 
-  start_new_thread(clientthread,(conn,addr))     
-  
+    start_new_thread(clientthread,(conn,addr))     
+  except:
+    print "\nServer Crashed!"
+    break
 # close connection to server for client
 conn.close() 
-server.close() 
+server.close()
