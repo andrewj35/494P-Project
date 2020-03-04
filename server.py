@@ -1,10 +1,13 @@
 import socket 
 import select 
 import sys 
+import os
+from shutil import copyfile
 from thread import *
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
+#IP_address = "0.0.0.0"
 IP_address = "127.0.0.50"
 Port = 6677
 server.bind((IP_address, Port)) 
@@ -19,8 +22,10 @@ addrs = []
 usernames = []
 # list of rooms : contains name of room, conn and username of creator
 roomnames = []
+# list of files in directory => grab all files, other than the base server/client/README files in the server at startup
+files = [f for f in os.listdir('.') if os.path.isfile(f) and f != "server.py" and f != "client.py" and f != "README.md"]
 # list of commands : need to add new commands here so we can list them to make it easy for client
-commands = ["/commands", "/disconnect", "/users", "/rooms", "/create", "/list", "/join", "/leave"]
+commands = ["/commands", "/disconnect", "/users", "/rooms", "/create", "/list", "/join", "/leave", "/upload_file", "/sync_files"]
 # list of descriptions for what commands do
 command_descriptions = ["List of commands.", 
 "Disconnect from the server.",
@@ -29,7 +34,11 @@ command_descriptions = ["List of commands.",
 "Input name of chatroom they want to create, if it doesn\'t already exist, creates new chatroom with that name.",
 "Input name of chatroom they want to list users of, if it exists, prints list of users in that chatroom.",
 "Input name of chatroom they want to join, if it exists, they are added to the user list.",
-"Input name of chatroom they want to leave, if it exists and they are a member, removes them from the chatroom."]
+"Input name of chatroom they want to leave, if it exists and they are a member, removes them from the chatroom.",
+"Input name of file to upload it to the server.",
+"Copies all files in the server to your directory"]
+# list of users who are 'busy' so they shouldn't receive any messages
+busy = []
 
 def clientthread(conn, addr): 
 # get a unique username to add to our list of users
@@ -100,6 +109,10 @@ def clientthread(conn, addr):
 # allows user to leave a chat room if they're a member of input name
         elif message == commands[7]:
           leave_room(conn, addr, username)
+# allows user to upload a file to the server
+        elif message == commands[8]:
+          update_files(conn, addr, username)
+#          file_upload(conn, addr, username)
 # sends message to whole server
         else:
 # maybe output header for room message was sent from
@@ -125,6 +138,75 @@ def clientthread(conn, addr):
 
 # TODO send message to specific chat room
 #def broadcast_room(conn, username, room):
+
+# copies all files on the server into the user's current directory
+def update_files(conn, addr, username):
+  conn.send("server-file-sync\n")
+  while True:
+    try:
+      my_files = conn.recv(2048)
+      if my_files:
+        to_upload = [x for x in files if x not in my_files]
+        for each in to_upload:
+          send_file(conn, addr, username, each)
+      else:
+        remove(conn, addr, username)
+        break
+    except:
+      remove(conn, addr, username)
+      continue
+
+def get_file(conn, addr, username, filename):
+  with open(filename, 'wb') as f:
+    files.append(filename)
+    conn.send("send-server-file\n")
+    conn.send(filename)
+    while True:
+      try:
+        message = conn.recv(2048)
+        if message:
+          f.write(message)      
+        else:
+          f.close()
+          break # upload done
+      except:
+        remove(conn, addr, username)
+        continue
+
+def send_file(conn, addr, username, filename):
+  busy.append(username)
+  f = open(filename, 'rb')
+  l = f.read(1024)
+  while(l):
+    conn.send(l)
+    l = f.read(1024)
+  f.close()
+  busy.remove(username)
+
+def file_upload(conn, addr, username):
+  conn.send("Enter filename (in the same folder) that you would like to upload: ")
+  while True:
+    try:
+      message = conn.recv(2048)
+      if message:
+        filename,user = message.split(' ', 1)
+        if filename:
+# no duplicate files so we don't overwrite anything
+          if filename not in files:
+            get_file(conn, addr, username, filename)
+            print(filename + " uploaded to server")
+          else:
+            conn.send("File with that name already exists!")
+            break;
+        else:
+          conn.send("Incorrect input!")
+          break
+      else:
+        remove(conn, addr, username)
+        break
+    except:
+     remove(conn, addr, username)
+     continue
 
 class chat_room:
   def __init__(self, name, creator, conn):
@@ -165,7 +247,7 @@ def leave_room(conn, addr, username):
           break
       else:
         print "leave_room else remove"
-#        remove(conn, addr, username)
+        remove(conn, addr, username)
         break
     except:
       print "print_room_users except remove"
@@ -253,7 +335,7 @@ def create_room(conn, addr, username):
 # message to be broadcast to all the users in the server
 def broadcast(message, connection, addr, username): 
   for clients in list_of_clients: 
-    if clients != connection: 
+    if clients != connection and usernames[(list_of_clients.index(clients))] not in busy: 
       try: 
         clients.send(message) 
       except: 

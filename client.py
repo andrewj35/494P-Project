@@ -1,9 +1,11 @@
 import socket 
 import select 
 import sys 
+import os
   
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 
+#IP_address = "0.0.0.0"
 IP_address = "127.0.0.50"
 Port = 6677
 server.connect((IP_address, Port)) 
@@ -24,7 +26,19 @@ while True:
             elif message == "You have been disconnected from the server\n":
               print message 
               exit();
-            print message 
+            elif message == "server-file-sync\n":
+              files = [f for f in os.listdir('.') if os.path.isfile(f) and f != "server.py" and f != "client.py" and f != "README.md"]
+              server.send(message)
+            elif message[0:16] == "send-server-file\n":
+              filename = message[0:]
+              f = open(filename, 'rb')
+              l = f.read(1024)
+              while(l):
+                server.send(l)
+                l = f.read(1024)
+              f.close()
+            else:
+              print message 
         else: 
             message = sys.stdin.readline() 
             # send the message to the server
