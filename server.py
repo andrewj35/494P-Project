@@ -2,13 +2,15 @@ import socket
 import select 
 import sys 
 import os
-from shutil import copyfile
 from thread import *
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
 #IP_address = "0.0.0.0"
 IP_address = "127.0.0.50"
+# gets your IP address
+#hostname = socket.gethostname()
+#IP_address = socket.gethostbyname(hostname)
 Port = 6677
 server.bind((IP_address, Port)) 
   
@@ -23,7 +25,7 @@ usernames = []
 # list of rooms : contains name of room, conn and username of creator
 roomnames = []
 # list of files in directory => grab all files, other than the base server/client/README files in the server at startup
-files = [f for f in os.listdir('.') if os.path.isfile(f) and f != "server.py" and f != "client.py" and f != "README.md"]
+files = [f for f in os.listdir('.') if os.path.isfile(f)]
 # list of commands : need to add new commands here so we can list them to make it easy for client
 commands = ["/commands", "/disconnect", "/users", "/rooms", "/create", "/list", "/join", "/leave", "/upload_file", "/copy_file", "/message_room", "/ls", "/server_ls"]
 # list of descriptions for what commands do
@@ -38,11 +40,13 @@ command_descriptions = ["List of commands.",
 "Input name of file to upload it to the server.",
 "Copies all files in the server to your directory.",
 "Message a specific chatroom they are in.",
-"List files in your current directory.",
+"List files in your directory.",
 "List files in the server's directory."]
 # list of users who are 'busy' so they shouldn't receive any messages
 # mostly used for filetransfer - receiving message could mess with up/download
 busy = []
+# to close connection later
+conn = None
 
 def clientthread(conn, addr): 
 # get a unique username to add to our list of users
@@ -78,18 +82,12 @@ def clientthread(conn, addr):
       else: 
 # message having no content means the user has disconnected
 # also may handle client crashes
-#        print "client thread else remove"
         remove(conn, addr, username) 
         break
     except: 
 # handles client connection lost (crash)
-#      print "client thread except remove"
       remove(conn, addr, username) 
       continue
-
-#TODO create function that removes user from all rooms they are a part of if they disconnect from server
-# special case if they're owner of a room - have to decide how we handle that case
-# def leave_all(conn, addr, username):
 
 def function_call(conn, addr, username, message):
   message = message.strip()
@@ -113,12 +111,7 @@ def function_call(conn, addr, username, message):
     conn.send(user_list)
 # print the list of chat room
   elif message == commands[3]:
-    print "Printing list of chat rooms for " + username
-    room_list = "List of Rooms:\n"
-    for each in roomnames:
-      room_list = room_list + each.name + "\n"
-    room_list = room_list + "---------------"
-    conn.send(room_list)
+    conn.send(list_chatrooms(conn, addr, username, False))
 # allows the user to create a new chat room
   elif message == commands[4]:
     create_room(conn, addr, username)
@@ -151,6 +144,20 @@ def function_call(conn, addr, username, message):
     message_to_send = "" + username + ": " + message 
     print message_to_send
     broadcast(message_to_send, conn, addr, username) 
+
+# returns list of chatrooms
+def list_chatrooms(conn, addr, username, numbered):
+  if numbered == True:
+    num = 1;
+  room_list = "List of Rooms:\n"
+  for each in roomnames:
+    if numbered == True:
+      room_list = room_list + str(num) + ". "
+      num += 1
+    room_list = room_list + each.name + "\n"
+  room_list = room_list + "---------------"
+  print "Printed list of chat rooms for " + username
+  return room_list
 
 # gets list of files in user's current directory
 def list_my_files(conn, addr, username, numbered):
@@ -189,34 +196,49 @@ def list_server_files(conn, addr, username, numbered):
 
 # send message to specific chat room
 def broadcast_room(conn, addr, username):
-  conn.send("Enter name of chat room you wish to message: ")
+  rooms = list_chatrooms(conn, addr, username, True)
+  conn.send(rooms+"\nEnter corresponding number of chat room you would like to message: ")
   while True:
     try:
       name = conn.recv(2048)
       if name:
-        name = name.strip()
-        obj = [x for x in roomnames if x.name == name]
-        conn.send("Enter message: ")
-        message = conn.recv(2048)
-        message_to_send = "<Room: "+ name +"><Username: " + username + ">: " + message 
-        if obj:
-          try: 
-            for clients in obj[0].conns: 
-              if clients != conn:
-               clients.send(message_to_send) 
-          except: 
-            clients.close() 
-          # if the link is broken, we remove the client 
-            remove(clients, addr, username) 
-        else:
-          conn.send("Chat room with that name doesn't exist!")
-        break # break out of while loop
+        try:
+          val = int(name)
+          print val
+          if val <= len(roomnames):
+            if username in roomnames[val-1].users:
+              conn.send("Enter message: ")
+              message = get_message(conn, addr, username, roomnames[val-1].name)
+              for client in roomnames[val-1].conns:
+                if client != conn:
+                  client.send(message)
+            else:
+              conn.send("You're not a member of that room so you can't send a message to it!")
+              break
+          else: # invalid #
+            conn.send("Invalid input!")
+            break
+        except ValueError: # entered something other than a number
+          conn.send("Invalid input!")
+          break
       else:
-#        print "broadcast_room else remove"
         remove(conn, addr, username)
         break
     except:
-#      print "broadcast_room except remove"
+      remove(conn, addr, username)
+      continue
+
+def get_message(conn, addr, username, name):
+  while True:
+    try:
+      message = conn.recv(2048)
+      if message:
+        message_to_send = "<Room: "+ name +"><Username: " + username + ">: " + message 
+        return message_to_send
+      else:
+        remove(conn, addr, username)
+        break
+    except:
       remove(conn, addr, username)
       continue
 
@@ -324,9 +346,6 @@ class chat_room:
     self.users.append(creator) # add creator to user list
     self.conns.append(conn) # add creator conn to conns list
 
-# TODO quick leave function for when user quits room
-# should remove all traces
-
 # allows user to leave chat room if they are a member
 def leave_room(conn, addr, username):
   conn.send("Enter name of chat room: ")
@@ -353,11 +372,9 @@ def leave_room(conn, addr, username):
           conn.send("Chat room with that name wasn't found!")
           break
       else:
-        print "leave_room else remove"
         remove(conn, addr, username)
         break
     except:
-      print "print_room_users except remove"
       remove(conn, addr, username)
       continue
 
@@ -381,11 +398,9 @@ def print_room_users(conn, addr, username):
           conn.send("Chat room with that name wasn't found!")
         break # break out of while loop
       else:
-#        print "print_room_users else remove"
         remove(conn, addr, username)
         break
     except:
-#      print "print_room_users except remove"
       remove(conn, addr, username)
       continue
 
@@ -409,11 +424,9 @@ def join_room(conn, addr, username):
           conn.send("Chat room with that name doesn't exist!")
         break # break out of while loop
       else:
-#        print "join_room else remove"
         remove(conn, addr, username)
         break
     except:
-#      print "join_room except remove"
       remove(conn, addr, username)
       continue
 
@@ -433,7 +446,6 @@ def create_room(conn, addr, username):
           conn.send("Room has been created!")
           break
       else:
-# make sure we can handle client crashes 
         remove(conn, addr, username) 
     except:
       remove(conn, addr, username) 
@@ -459,7 +471,7 @@ def remove_from_lists(connection, addr, username):
     if username in usernames: 
       usernames.remove(username)
       print username + " has disconnected"
-      message_to_send = username + " has disconnected"
+# remove user from all rooms they were a part of
       rooms_in = [x for x in roomnames if username in x.users]
       for each in rooms_in:
         each.users.remove(username)
@@ -484,11 +496,12 @@ while True:
 # add client addr to list of addresses
     addrs.append(addr[0])
 # creates and individual thread for every user  
-# that connects 
     start_new_thread(clientthread,(conn,addr))     
   except:
     print "\nServer Crashed!"
     break
-# close connection to server for client
-conn.close() 
+
+# if any connection was made
+if conn != None:
+  conn.close()
 server.close()
