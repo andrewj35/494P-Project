@@ -17,7 +17,6 @@ while True:
     read_sockets,write_socket, error_socket = select.select(sockets_list,[],[]) 
   
     for socks in read_sockets: 
-        # when user first joins room
         if socks == server: 
             message = socks.recv(2048) 
             if len(message) == 0:
@@ -27,19 +26,53 @@ while True:
             elif message == "You have been disconnected from the server\n":
               print message 
               exit();
-            elif message == "server-file-sync\n":
-              files = [f for f in os.listdir('.') if os.path.isfile(f) and f != "server.py" and f != "client.py" and f != "README.md"]
-              server.send(message)
-            elif message[0:16] == "send-server-file\n":
-              filename = message[0:]
+            elif message[0:25] == "server-req-files-directory\n":
+              if message[25:] == "num":
+                numbered = True
+                num = 1
+              else:
+                numbered = False
+              file_list = [f for f in os.listdir('.') if os.path.isfile(f) and f != "server.py" and f != "client.py" and f != "README.md"]
+              files = ""
+              for f in file_list:
+                if numbered:
+                  files += int(num) + ". "
+                  num += 1
+                files += f + "\n"
+              server.send(files)
+            elif message[0:17] == "send-server-file\n":
+              filename = message[17:]
               f = open(filename, 'rb')
               l = f.read(1024)
               while(l):
                 server.send(l)
                 l = f.read(1024)
+              server.send("send-server-file\nend")
               f.close()
+            elif message[0:20] == "receive-server-file\n":
+              filename = message[20:]
+              with open(filename, 'wb') as f:
+                while True:
+                  try:
+                    data = socks.recv(1024)
+                    if len(data) == 0:
+                      print "Connection to server lost!\n"
+                      server.close();
+                      exit();
+                    elif data.endswith("receive-server-file\nend"):
+                      data.replace("receive-server-file\nend", "")
+                      f.write(data)
+                      f.close()
+                      break
+                    else:
+                      f.write(data)
+                  except:
+                    print "Connection to server lost!\n"
+                    server.close();
+                    exit()
+                f.close()
             else:
-              print message 
+              print message
         else: 
             message = sys.stdin.readline() 
             # send the message to the server

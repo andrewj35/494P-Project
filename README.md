@@ -12,7 +12,6 @@ Required:
 Extra Credit:
 
 	- private or ephermal messaging (maybe they can send based on username via command from client to server input)
-	- file transfer (I have no idea)
 	- cloud connected server (I have no idea)
 	- secure messaging - I assume this means it needs some cipher so that the server also can't read it -> receiving client needs key to decipher to read it
 	  
@@ -26,6 +25,7 @@ Extra Stuff:
 	  
 Finished:
 
+	  - file transfer (can upload files to and download files from server)
   	- client can leave a room 
   	- client can join multiple (selected rooms)
   	- client can list members of a room

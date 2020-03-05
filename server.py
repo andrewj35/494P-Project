@@ -25,7 +25,7 @@ roomnames = []
 # list of files in directory => grab all files, other than the base server/client/README files in the server at startup
 files = [f for f in os.listdir('.') if os.path.isfile(f) and f != "server.py" and f != "client.py" and f != "README.md"]
 # list of commands : need to add new commands here so we can list them to make it easy for client
-commands = ["/commands", "/disconnect", "/users", "/rooms", "/create", "/list", "/join", "/leave", "/upload_file", "/sync_files", "/message_room"]
+commands = ["/commands", "/disconnect", "/users", "/rooms", "/create", "/list", "/join", "/leave", "/upload_file", "/copy_file", "/message_room", "/ls", "/server_ls"]
 # list of descriptions for what commands do
 command_descriptions = ["List of commands.", 
 "Disconnect from the server.",
@@ -37,7 +37,9 @@ command_descriptions = ["List of commands.",
 "Input name of chatroom they want to leave, if it exists and they are a member, removes them from the chatroom.",
 "Input name of file to upload it to the server.",
 "Copies all files in the server to your directory.",
-"Message a specific chatroom they are in."]
+"Message a specific chatroom they are in.",
+"List files in your current directory.",
+"List files in the server's directory."]
 # list of users who are 'busy' so they shouldn't receive any messages
 # mostly used for filetransfer - receiving message could mess with up/download
 busy = []
@@ -72,61 +74,7 @@ def clientthread(conn, addr):
     try: 
       message = conn.recv(2048) 
       if message: 
-# gets rid of the '\n' char at end of message
-        message = message.strip()
-        if message == commands[0]:
-          command_list = "Commands:\n"
-          for each in range(len(commands)):
-            command_list = command_list + commands[each] + "\n - " + command_descriptions[each] + "\n"
-          command_list = command_list + "---------------"
-          conn.send(command_list)
-# disconnect user from server
-        elif message == commands[1]:
-          print "disconnecting user..."
-          remove(conn, addr, username)
-# print list of users 
-        elif message == commands[2]:
-          user_list = "Users:\n"
-          for each in range(len(usernames)):
-            user_list = user_list + usernames[each] + "\n"
-          user_list = user_list + "---------------"
-          conn.send(user_list)
-# print the list of chat room
-        elif message == commands[3]:
-          print "Printing list of chat rooms for " + username
-          room_list = "List of Rooms:\n"
-          for each in roomnames:
-            room_list = room_list + each.name + "\n"
-          room_list = room_list + "---------------"
-          conn.send(room_list)
-# allows the user to create a new chat room
-        elif message == commands[4]:
-          create_room(conn, addr, username)
-# allows user to list members of a chat room
-        elif message == commands[5]:
-          print_room_users(conn, addr, username)
-# allows user to join a chat room
-        elif message == commands[6]:
-          join_room(conn, addr, username)
-# allows user to leave a chat room if they're a member of input name
-        elif message == commands[7]:
-          leave_room(conn, addr, username)
-# allows user to upload a file to the server
-        elif message == commands[8]:
-          update_files(conn, addr, username)
-# allows user to download files uploaded to server
-        elif message = commands[9]:
-          file_upload(conn, addr, username)
-# allows user to message a specific chat room
-        elif message == commands[10]:
-          broadcast_room(conn, addr, username)
-# sends message to whole server
-        else:
-# maybe output header for room message was sent from
-# i.e.      message_to_send = "<" + chatroom_name + "> " + ... 
-          message_to_send = "" + username + ": " + message 
-          print message_to_send
-          broadcast(message_to_send, conn, addr, username) 
+        function_call(conn, addr, username, message)
       else: 
 # message having no content means the user has disconnected
 # also may handle client crashes
@@ -143,7 +91,103 @@ def clientthread(conn, addr):
 # special case if they're owner of a room - have to decide how we handle that case
 # def leave_all(conn, addr, username):
 
-# TODO send message to specific chat room
+def function_call(conn, addr, username, message):
+  message = message.strip()
+# print list of commands to client
+  if message == commands[0]:
+    command_list = "Commands:\n"
+    for each in range(len(commands)):
+      command_list = command_list + commands[each] + "\n - " + command_descriptions[each] + "\n"
+    command_list = command_list + "---------------"
+    conn.send(command_list)
+# disconnect user from server
+  elif message == commands[1]:
+    print "disconnecting user..."
+    remove(conn, addr, username)
+# print list of users 
+  elif message == commands[2]:
+    user_list = "Users:\n"
+    for each in range(len(usernames)):
+      user_list = user_list + usernames[each] + "\n"
+    user_list = user_list + "---------------"
+    conn.send(user_list)
+# print the list of chat room
+  elif message == commands[3]:
+    print "Printing list of chat rooms for " + username
+    room_list = "List of Rooms:\n"
+    for each in roomnames:
+      room_list = room_list + each.name + "\n"
+    room_list = room_list + "---------------"
+    conn.send(room_list)
+# allows the user to create a new chat room
+  elif message == commands[4]:
+    create_room(conn, addr, username)
+# allows user to list members of a chat room
+  elif message == commands[5]:
+    print_room_users(conn, addr, username)
+# allows user to join a chat room
+  elif message == commands[6]:
+    join_room(conn, addr, username)
+# allows user to leave a chat room if they're a member of input name
+  elif message == commands[7]:
+    leave_room(conn, addr, username)
+# allows user to upload a file to the server
+  elif message == commands[8]:
+    file_upload(conn, addr, username)
+# allows user to download files uploaded to server
+  elif message == commands[9]:
+    copy_file(conn, addr, username)
+# allows user to message a specific chat room
+  elif message == commands[10]:
+    broadcast_room(conn, addr, username)
+# list files in your directory
+  elif message == commands[11]:
+    conn.send(list_my_files(conn, addr, username, False))
+# list files in server directory
+  elif message == commands[12]:
+    conn.send(list_server_files(conn, addr, username, False))
+# sends message to whole server
+  else:
+    message_to_send = "" + username + ": " + message 
+    print message_to_send
+    broadcast(message_to_send, conn, addr, username) 
+
+# gets list of files in user's current directory
+def list_my_files(conn, addr, username, numbered):
+  if numbered == True:
+    conn.send("server-req-files-directory\nnum")
+  else:
+    conn.send("server-req-files-directory\n")
+  while True:
+    try:
+      my_files = conn.recv(2048)
+      if my_files:
+        file_list = ("Files in your current directory:\n")
+        file_list += my_files
+        file_list = file_list + "-------------"
+        return file_list
+        break
+      else:
+        remove(conn, addr, username)
+        break
+    except:
+      remove(conn, addr, username)
+      continue
+
+# sends user list of files in the server
+def list_server_files(conn, addr, username, numbered):
+  file_list = ("Files in server directory:\n")
+  if numbered == True:
+    num = 1 
+  for each in files:
+    if numbered == True:
+      file_list = file_list + str(num) + ". "
+      num = num + 1
+    file_list = file_list + each + "\n"
+  file_list = file_list + "-------------"
+  return file_list
+
+# send message to specific chat room
 def broadcast_room(conn, addr, username):
   conn.send("Enter name of chat room you wish to message: ")
   while True:
@@ -156,14 +200,14 @@ def broadcast_room(conn, addr, username):
         message = conn.recv(2048)
         message_to_send = "<Room: "+ name +"><Username: " + username + ">: " + message 
         if obj:
-              try: 
-                for clients in obj[0].conns: 
-                  if clients != conn:
-                   clients.send(message_to_send) 
-              except: 
-                clients.close() 
-              # if the link is broken, we remove the client 
-                remove(clients, addr, username) 
+          try: 
+            for clients in obj[0].conns: 
+              if clients != conn:
+               clients.send(message_to_send) 
+          except: 
+            clients.close() 
+          # if the link is broken, we remove the client 
+            remove(clients, addr, username) 
         else:
           conn.send("Chat room with that name doesn't exist!")
         break # break out of while loop
@@ -176,16 +220,25 @@ def broadcast_room(conn, addr, username):
       remove(conn, addr, username)
       continue
 
-# copies all files on the server into the user's current directory
-def update_files(conn, addr, username):
-  conn.send("server-file-sync\n")
+# copies file on the server into the user's current directory
+def copy_file(conn, addr, username):
+  message = ("WARNING! If a file of the same name you want to copy already exists in your directory it will be overwritten!")
+  message += list_server_files(conn, addr, username, True)
+  message += ("\nEnter the number associated with the file you would like to download: ")
+  conn.send(message)
   while True:
     try:
-      my_files = conn.recv(2048)
-      if my_files:
-        to_upload = [x for x in files if x not in my_files]
-        for each in to_upload:
-          send_file(conn, addr, username, each)
+      filename = conn.recv(2048)
+      if filename:
+        try: 
+          val = int(filename)
+          if val <= len(files):
+            send_file(conn, addr, username, files[val-1])
+            break
+        except ValueError:
+          conn.send("Invalid input!")
+          break
+
       else:
         remove(conn, addr, username)
         break
@@ -193,50 +246,31 @@ def update_files(conn, addr, username):
       remove(conn, addr, username)
       continue
 
-def get_file(conn, addr, username, filename):
-  with open(filename, 'wb') as f:
-    files.append(filename)
-    conn.send("send-server-file\n")
-    conn.send(filename)
-    while True:
-      try:
-        message = conn.recv(2048)
-        if message:
-          f.write(message)      
-        else:
-          f.close()
-          break # upload done
-      except:
-        remove(conn, addr, username)
-        continue
-
-def send_file(conn, addr, username, filename):
-  busy.append(username)
-  f = open(filename, 'rb')
-  l = f.read(1024)
-  while(l):
-    conn.send(l)
-    l = f.read(1024)
-  f.close()
-  busy.remove(username)
-
 def file_upload(conn, addr, username):
-  conn.send("Enter filename (in the same folder) that you would like to upload: ")
+  my_files = list_my_files(conn, addr, username, True)
+  conn.send(my_files + "\nEnter textfile (in the same folder) that you would like to upload: ")
   while True:
     try:
-      message = conn.recv(2048)
-      if message:
-        filename,user = message.split(' ', 1)
-        if filename:
-# no duplicate files so we don't overwrite anything
-          if filename not in files:
-            get_file(conn, addr, username, filename)
-            print(filename + " uploaded to server")
+      filename = conn.recv(2048)
+      if filename:
+        try:
+          val = int(filename)
+          file_list = my_files.split('\n')
+          if val <= (len(file_list)-1):
+            to_upload = file_list[val]
+            to_upload = to_upload[3:]
+            if to_upload in files:
+              conn.send("A file with that name already exists! Cannot upload duplicate name files!")
+              break
+            get_file(conn, addr, username, to_upload)
+            conn.send(to_upload + " successfully uploaded to server directory!")
+            print(to_upload + " uploaded to server by " + username)
+            break
           else:
-            conn.send("File with that name already exists!")
-            break;
-        else:
-          conn.send("Incorrect input!")
+            conn.send("Invalid input!")
+            break
+        except ValueError:
+          conn.send("Invalid input!")
           break
       else:
         remove(conn, addr, username)
@@ -244,6 +278,41 @@ def file_upload(conn, addr, username):
     except:
      remove(conn, addr, username)
      continue
+
+# server receiving file from client
+def get_file(conn, addr, username, filename):
+  with open(filename, 'wb') as f:
+    files.append(filename)
+    conn.send("send-server-file\n" + filename)
+    while True:
+      try:
+        message = conn.recv(2048)
+        if message:
+          if message == "send-server-file\nend":
+            f.close()
+            break
+          f.write(message)      
+        else:
+          remove(conn, addr, username)
+          break
+      except:
+        remove(conn, addr, username)
+        continue
+
+# server sending file
+def send_file(conn, addr, username, filename):
+  busy.append(username)
+  cmd = "receive-server-file\n"
+  conn.send(cmd+filename)
+  f = open(filename, 'rb')
+  l = f.read(1024)
+  while(l):
+    conn.send(l)
+    l = f.read(1024)
+  f.close()
+  conn.send(cmd + "end")
+  print filename + " copied into " + username + "'s directory"
+  busy.remove(username)
 
 class chat_room:
   def __init__(self, name, creator, conn):
@@ -385,8 +454,10 @@ def broadcast(message, connection, addr, username):
 def remove_from_lists(connection, addr, username):
   if connection in list_of_clients:
     list_of_clients.remove(connection) 
-    if addr[0] in addrs: addrs.remove(addr[0])
-    if username in usernames: usernames.remove(username)
+    if addr[0] in addrs: 
+      addrs.remove(addr[0])
+    if username in usernames: 
+      usernames.remove(username)
       print username + " has disconnected"
       message_to_send = username + " has disconnected"
       rooms_in = [x for x in roomnames if username in x.users]
