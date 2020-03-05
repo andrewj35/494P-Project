@@ -5,14 +5,14 @@ TO DO LIST:
 
 Required:
 
-	- RFC document
-	- Programming style - I assume clean, readable with comments for functions/variables
+  - RFC document
+  - Programming style - I assume clean, readable with comments for functions/variables
 
 Extra Credit:
 
-	- private or ephermal messaging
-	- cloud connected server
-	- secure messaging
+  - private or ephermal messaging
+  - cloud connected server
+  - secure messaging
 	  
 Extra Stuff:
 
@@ -25,7 +25,7 @@ Extra Stuff:
 Finished:
 
   - server process (possibly done)
-	- file transfer (can upload files from the directory where client.py is to, and download files from, server)
+  - file transfer (can upload files from the directory where client.py is to, and download files from, server)
   - client can leave a room 
   - client can join multiple (selected rooms)
   - client can list members of a room
@@ -37,7 +37,7 @@ Finished:
   - multiple clients can connect to server
   - client can disconnect from a server
   - server can disconnect from clients
-	- client can send messages to a room (J Similar to a channel)
-	- client can send distinct message to multiple (selected) rooms (Can specify which room to send to)
-	- server/client can gracefully handle client/server crashes (Error message is given to both server and client)
-	- Programming style - I assume clean, readable with comments for functions/variables
+  - client can send messages to a room (J Similar to a channel)
+  - client can send distinct message to multiple (selected) rooms (Can specify which room to send to)
+  - server/client can gracefully handle client/server crashes (Error message is given to both server and client)
+  - Programming style - I assume clean, readable with comments for functions/variables
