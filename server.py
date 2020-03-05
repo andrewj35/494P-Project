@@ -248,7 +248,7 @@ def copy_file(conn, addr, username):
 
 def file_upload(conn, addr, username):
   my_files = list_my_files(conn, addr, username, True)
-  conn.send(my_files + "\nEnter textfile (in the same folder) that you would like to upload: ")
+  conn.send(my_files + "\nEnter corresponding to the file that you would like to upload: ")
   while True:
     try:
       filename = conn.recv(2048)
