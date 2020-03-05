@@ -11,7 +11,6 @@ server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 IP_address = "131.252.208.23"
 #hostname = socket.gethostname()
 #IP_address = socket.gethostbyname(hostname)
-print IP_address
 Port = 6677
 server.connect((IP_address, Port)) 
 

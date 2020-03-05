@@ -11,7 +11,6 @@ server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 # gets your IP address
 hostname = socket.gethostname()
 IP_address = socket.gethostbyname(hostname)
-print IP_address
 Port = 6677
 server.bind((IP_address, Port)) 
   
@@ -160,8 +159,8 @@ def private_message(conn, addr, username):
       if name:
         name = name.strip()
         conn.send("Enter message: ")
-        message = conn.recv(2048)
-        message_to_send = "<Private Message> <Username: " + username + ">: " + message 
+        header = "<Private Message> <Username: " + username + ">: "
+        message_to_send = header + get_message(conn, addr, username, header)
         try:
           for names in usernames:
             if name == names:
@@ -250,7 +249,8 @@ def broadcast_room(conn, addr, username):
           if val <= len(roomnames):
             if username in roomnames[val-1].users:
               conn.send("Enter message: ")
-              message = get_message(conn, addr, username, roomnames[val-1].name)
+              header = "<Room: " + roomnames[val-1].name +"><Username: " + username + ">: " 
+              message = get_message(conn, addr, username, header)
               for client in roomnames[val-1].conns:
                 if client != conn:
                   client.send(message)
@@ -272,12 +272,12 @@ def broadcast_room(conn, addr, username):
       continue
 
 # get message for chatroom messaging
-def get_message(conn, addr, username, name):
+def get_message(conn, addr, username, header):
   while True:
     try:
       message = conn.recv(2048)
       if message:
-        message_to_send = "<Room: " + name +"><Username: " + username + ">: " + message 
+        message_to_send = header + message 
         break
       else:
         remove(conn, addr, username)
@@ -299,13 +299,15 @@ def copy_file(conn, addr, username):
       if filename:
         try: 
           val = int(filename)
-          if val <= len(files):
+          if val <= len(files) and len(files) > 0 and val > 0:
             send_file(conn, addr, username, files[val-1])
             break
-        except ValueError:
+          else:
+            conn.send("Invalid input!")
+            break
+        except:
           conn.send("Invalid input!")
           break
-
       else:
         remove(conn, addr, username)
         break
@@ -324,8 +326,7 @@ def file_upload(conn, addr, username):
         try:
           val = int(filename)
           file_list = my_files.split('\n')
-          if val <= (len(file_list)-2):
-            val -= 1
+          if val < len(file_list)-1 and len(file_list) > 0 and val > 0:
             to_upload = file_list[val]
             to_upload = to_upload[3:]
             if to_upload in files:
@@ -559,9 +560,6 @@ while True:
     list_of_clients.append(conn) 
 # add client addr to list of addresses
     addrs.append(addr[0])
-    print addr
-    print addr[0]
-    print conn
 # creates and individual thread for every user  
     start_new_thread(clientthread,(conn,addr))     
   except:
