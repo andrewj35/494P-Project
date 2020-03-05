@@ -354,27 +354,31 @@ class chat_room:
 
 # allows user to leave chat room if they are a member
 def leave_room(conn, addr, username):
-  conn.send("Enter name of chat room: ")
+  obj = [x for x in roomname if x.users.contains(username)]
+  count = 1;
+  my_rooms = "Rooms you are a member of:\n"
+  for each in obj:
+    my_rooms = count + ". " + each.name + "\n"
+  conn.send(my_rooms+"\nEnter corresponding number of chat room you want to leave: ")
   while True:
     try:
       name = conn.recv(2048)
       if name:
-        name = name.strip()
-        obj = [x for x in roomnames if x.name == name]
-        if obj:
-          if username in obj[0].users:
-            obj[0].users.remove(username)
-            obj[0].conns.remove(conn)
-            conn.send("You have left chat room : " + name)
-            print username + " has left chat room " + name
-            if obj[0].creator == username and obj[0].conn == conn:
-              print username + " wants to delete '" + name + "'"
+        index = int(name)
+        try:
+          if index <= len(obj) and len(obj) > 0 and index > 0:
+            index = index - 1
+            obj[index].users.remove(username)
+            obj[index].conns.remove(conn)
+            conn.send("You have left chat room : " + obj[index].name)
+            print username + " has left chat room " + obj[index].name
 # TODO delete room if the creator wants to leave the room OR come up with way to replace creator
+            break
           else:
-            conn.send("No user with that name found in chat room: " + name)
-          break # break out of while loop
-        else:
-          conn.send("Chat room with that name wasn't found!")
+            conn.send("Invalid input!")
+            break
+        except:
+          conn.send("Invalid input!")
           break
       else:
         remove(conn, addr, username)
@@ -385,23 +389,29 @@ def leave_room(conn, addr, username):
 
 # print list of users in a specific chat room
 def print_room_users(conn, addr, username):
-  conn.send("Enter name of chat room: ")
+  rooms = list_chatrooms(conn, addr, username, True)
+  conn.send(rooms+"\nEnter corresponding number of chat room: ")
   while True:
     try:
       name = conn.recv(2048)
       if name:
-        name = name.strip()
-        obj = [x for x in roomnames if x.name == name]
-        if obj:
-          user_list = "Users:\n"
-          for user in obj[0].users:
-            user_list = user_list + user + "\n"
-          user_list = user_list + "---------------"
-          print "printed client list for '" + name + "' chat room"
-          conn.send(user_list)
-        else:
-          conn.send("Chat room with that name wasn't found!")
-        break # break out of while loop
+        index = int(name)
+        try:
+          if index <= len(roomnames) and len(roomnames) > 0 and index > 0:
+            index -= 1
+            user_list = "Users:\n"
+            for each in roomnames[index].users:
+              user_list = user_list + each + "\n"
+            user_list = user_list + "---------------"
+#            print "printed client list for '" + name + "' chat room"
+            conn.send(user_list)
+            break
+          else:
+            conn.send("Invalid input!")
+            break # break out of while loop
+        except:
+          conn.send("Invalid input!")
+          break
       else:
         remove(conn, addr, username)
         break
@@ -419,10 +429,11 @@ def join_room(conn, addr, username):
       if name:
         index = int(name)
         try:
-          if index <= len(roomnames) and index >= 0:
-            if username not in roomnames[index-1].users:
-              roomnames[index-1].users.append(username)
-              roomnames[index-1].conns.append(conn)
+          if index <= len(roomnames) and len(roomnames) > 0 and index > 0:
+            index = index - 1
+            if username not in roomnames[index].users:
+              roomnames[index].users.append(username)
+              roomnames[index].conns.append(conn)
               print "added username " + username + " to room " + name
               break
             else:
@@ -431,7 +442,7 @@ def join_room(conn, addr, username):
           else:
             conn.send("Invalid input!")
             break
-        except ValueError:
+        except:
           conn.send("Invalid input!")
           break # break out of while loop
         break
@@ -444,7 +455,9 @@ def join_room(conn, addr, username):
 
 # create new chat room if one of the input name doesn't exist already
 def create_room(conn, addr, username):
-  conn.send("Enter name of new chat room: ")
+  rooms = "Note you cannot create a chatroom with same name as an existing chat room.\nExisting chat rooms:\n"
+  rooms = rooms + list_chatrooms(conn, addr, username, False)
+  conn.send(rooms+"\nEnter name of new chat room: ")
   while True:
     try:
       name = conn.recv(2048)
