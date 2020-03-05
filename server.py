@@ -284,7 +284,8 @@ def file_upload(conn, addr, username):
         try:
           val = int(filename)
           file_list = my_files.split('\n')
-          if val <= (len(file_list)-1):
+          if val <= (len(file_list)-2):
+            val -= 1
             to_upload = file_list[val]
             to_upload = to_upload[3:]
             if to_upload in files:
@@ -297,7 +298,7 @@ def file_upload(conn, addr, username):
           else:
             conn.send("Invalid input!")
             break
-        except ValueError:
+        except:
           conn.send("Invalid input!")
           break
       else:

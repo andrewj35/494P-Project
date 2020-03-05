@@ -71,7 +71,7 @@ while True:
                 else:
                   f.write(data)
               except:
-                print "Connection to server lost!\n"
+                print "Connection to server lost!"
                 server.close();
                 exit()
               f.close()
