@@ -28,7 +28,7 @@ roomnames = []
 # list of files in directory => grab all files, other than the base server/client/README files in the server at startup
 files = [f for f in os.listdir('.') if os.path.isfile(f)]
 # list of commands : need to add new commands here so we can list them to make it easy for client
-commands = ["/commands", "/disconnect", "/users", "/rooms", "/create", "/list", "/join", "/leave", "/upload_file", "/copy_file", "/message_room", "/ls", "/server_ls"]
+commands = ["/commands", "/disconnect", "/users", "/rooms", "/create", "/list", "/join", "/leave", "/upload_file", "/copy_file", "/message_room", "/ls", "/server_ls", "/private_message"]
 # list of descriptions for what commands do
 command_descriptions = ["List of commands.", 
 "Disconnect from the server.",
@@ -42,7 +42,8 @@ command_descriptions = ["List of commands.",
 "Copies all files in the server to your directory.",
 "Message a specific chatroom they are in.",
 "List files in your directory.",
-"List files in the server's directory."]
+"List files in the server's directory.",
+"Privately messages someone."]
 # list of users who are 'busy' so they shouldn't receive any messages
 # mostly used for filetransfer - receiving message could mess with up/download
 busy = []
@@ -140,12 +141,51 @@ def function_call(conn, addr, username, message):
 # list files in server directory
   elif message == commands[12]:
     conn.send(list_server_files(conn, addr, username, False))
+# allows user to privately message someone
+  elif message == commands[13]:
+    private_message(conn, addr, username)
 # sends message to whole server
   else:
     message_to_send = "" + username + ": " + message 
     print message_to_send
     broadcast(message_to_send, conn, addr, username) 
 
+# send message to specific user
+def private_message(conn, addr, username):
+  conn.send("Enter username you wish to message: ")
+  while True:
+    try:
+      count = 0
+      name = conn.recv(2048)
+      if name:
+        name = name.strip()
+        conn.send("Enter message: ")
+        message = conn.recv(2048)
+        message_to_send = "<Private Message> <Username: " + username + ">: " + message 
+        try:
+          for names in usernames:
+            if name == names:
+              count = 1
+              user = usernames.index(name) 
+              connection = list_of_clients[user]
+              if connection != conn: 
+                connection.send(message_to_send) 
+        except: 
+          names.close()
+            # if the link is broken, we remove the client 
+          remove(names, addr, username) 
+        if count == 0:
+          conn.send("Username with that name doesn't exist!")
+        break # break out of while loop
+      else:
+#        print "private_message else remove"
+        remove(conn, addr, username)
+        break
+    except:
+#     print "private_message except remove"
+      remove(conn, addr, username)
+      continue
+	  
 # returns list of chatrooms
 def list_chatrooms(conn, addr, username, numbered):
   if numbered == True:
