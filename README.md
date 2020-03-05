@@ -25,7 +25,7 @@ Extra Stuff:
 	  
 Finished:
 
-	  - file transfer (can upload files to and download files from server)
+	- file transfer (can upload files from the directory where client.py is to, and download files from, server)
   	- client can leave a room 
   	- client can join multiple (selected rooms)
   	- client can list members of a room
