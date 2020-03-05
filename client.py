@@ -6,10 +6,12 @@ import os
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 
 #IP address of PSU
-IP_address = "127.0.0.50"
+#IP_address = "127.0.0.50"
 #IP_address = "0.0.0.0"
+IP_address = "131.252.208.23"
 #hostname = socket.gethostname()
 #IP_address = socket.gethostbyname(hostname)
+print IP_address
 Port = 6677
 server.connect((IP_address, Port)) 
 
