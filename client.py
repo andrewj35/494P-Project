@@ -26,12 +26,12 @@ while True:
             elif message == "You have been disconnected from the server\n":
               print message 
               exit();
-            elif message[0:25] == "server-req-files-directory\n":
-              if message[25:] == "num":
+            elif message[0:27] == "server-req-files-directory\n":
+              print "!"
+              numbered = False
+              if message[27:] == "num":
                 numbered = True
                 num = 1
-              else:
-                numbered = False
               file_list = [f for f in os.listdir('.') if os.path.isfile(f) and f != "server.py" and f != "client.py" and f != "README.md"]
               files = ""
               for f in file_list:

@@ -158,14 +158,13 @@ def list_my_files(conn, addr, username, numbered):
     conn.send("server-req-files-directory\nnum")
   else:
     conn.send("server-req-files-directory\n")
+  file_list = ("Files in your current directory:\n")
   while True:
     try:
       my_files = conn.recv(2048)
       if my_files:
-        file_list = ("Files in your current directory:\n")
         file_list += my_files
         file_list = file_list + "-------------"
-        return file_list
         break
       else:
         remove(conn, addr, username)
@@ -173,6 +172,7 @@ def list_my_files(conn, addr, username, numbered):
     except:
       remove(conn, addr, username)
       continue
+  return file_list
 
 # sends user list of files in the server
 def list_server_files(conn, addr, username, numbered):
