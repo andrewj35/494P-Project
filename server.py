@@ -7,10 +7,10 @@ from thread import *
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
 #IP_address = "0.0.0.0"
-#IP_address = "127.0.0.50"
+IP_address = "127.0.0.50"
 # gets your IP address
-hostname = socket.gethostname()
-IP_address = socket.gethostbyname(hostname)
+#hostname = socket.gethostname()
+#IP_address = socket.gethostbyname(hostname)
 Port = 6677
 server.bind((IP_address, Port)) 
   
@@ -160,7 +160,8 @@ def private_message(conn, addr, username):
         name = name.strip()
         conn.send("Enter message: ")
         header = "<Private Message> <Username: " + username + ">: "
-        message_to_send = header + get_message(conn, addr, username, header)
+        message_to_send = get_message(conn, addr, username, header)
+        message_to_send = message_to_send.replace('\n', "")
         try:
           for names in usernames:
             if name == names:
@@ -301,6 +302,7 @@ def copy_file(conn, addr, username):
           val = int(filename)
           if val <= len(files) and len(files) > 0 and val > 0:
             send_file(conn, addr, username, files[val-1])
+            conn.send((files[val]-1) + " successfully copied!")
             break
           else:
             conn.send("Invalid input!")
@@ -549,7 +551,7 @@ def remove_from_lists(connection, addr, username):
 def remove(connection, addr, username): 
   if connection in list_of_clients: 
     remove_from_lists(connection, addr, username)
-    connection.send("You have been disconnected from the server\n")
+    connection.send("You have been disconnected from the server")
   
 # actively listening for new clients who joining the server
 while True:
