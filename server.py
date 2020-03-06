@@ -50,14 +50,18 @@ command_descriptions = ["List of commands.",
 busy = []
 # to close connection later
 conn = None
+# buffer size
+BUFF_SIZE = 2048
 
 def clientthread(conn, addr): 
 # get a unique username to add to our list of users
   conn.send("Enter username: ")
+  exit = False
   while True:
-    username = get_message(conn, addr, "", "")
     try:
+      username = get_message(conn, addr, "", "")
       username = re.sub(r"[\n\t]*", "",username)
+      username = username.strip()
       if username not in usernames and len(username) >= 2:
         try:
           usernames.append(username)
@@ -68,8 +72,6 @@ def clientthread(conn, addr):
       else:
         if len(username) < 3 and username not in usernames:
           conn.send("Username shold be 2 or more characters long!\nEnter new username: ")
-        elif len(username) < 3:
-          conn.send("Username shold be 2 or more characters long!\nEnter new username: ")
         elif username in usernames:
           conn.send("Username already exists!\nEnter new username: ")
         else:
@@ -78,27 +80,29 @@ def clientthread(conn, addr):
     except:
       if conn in list_of_clients:
         remove(conn, addr, "") 
+      exit = True
       break
 
-  print username + " joined the server"
+  if not exit:
+    print username + " joined the server"
 # sends a message to this client
-  conn.send("Welcome " + username + "!\nEnter /commands to see list of commands with their description.") 
-  while True: 
-    message = conn.recv(2048) 
-    try: 
-      if message and len(message) > 0:
-        function_call(conn, addr, username, message)
-      else: 
+    conn.send("Welcome " + username + "!\nEnter /commands to see list of commands with their description.") 
+    while True: 
+      message = conn.recv(BUFF_SIZE) 
+      try: 
+        if message and len(message) > 0:
+          function_call(conn, addr, username, message)
+        else: 
 # message having no content means the user has disconnected
 # also may handle client crashes
-        if conn in conns and username in usernames:
-          remove(conn, addr, username) 
-        break
-    except: 
+          if conn in conns and username in usernames:
+            remove(conn, addr, username) 
+          break
+      except: 
 # handles client connection lost (crash)
-      if conn in list_of_clients and username in usernames:
-        remove(conn, addr, username) 
-      continue
+        if conn in list_of_clients and username in usernames:
+          remove(conn, addr, username) 
+        continue
 
 def function_call(conn, addr, username, message):
   message = message.strip()
@@ -163,7 +167,7 @@ def function_call(conn, addr, username, message):
 # input header of "" if no header required 
 def get_message(conn, addr, username, header):
   while True:
-    message = conn.recv(2048)
+    message = conn.recv(BUFF_SIZE)
     try:
       if message:
         message_to_send = header + message 
@@ -216,7 +220,7 @@ def list_my_files(conn, addr, username, numbered):
   file_list = ("Files in your current directory:\n")
   while True:
     try:
-      my_files = conn.recv(2048)
+      my_files = conn.recv(BUFF_SIZE)
       if my_files:
         file_list += my_files
         file_list = file_list + "-------------"
@@ -294,10 +298,10 @@ def send_file(conn, addr, username, filename):
   conn.send(cmd+filename)
   f = open(filename, 'rb')
   while True:
-    l = f.read(1024)
+    l = f.read(BUFF_SIZE)
     while(l):
       conn.send(l)
-      l = f.read(1024)
+      l = f.read(BUFF_SIZE)
     if not l:
       f.close()
       break
@@ -336,7 +340,7 @@ def get_file(conn, addr, username, filename):
     conn.send("send-server-file\n" + filename)
     while True:
       try:
-        message = conn.recv(2048)
+        message = conn.recv(BUFF_SIZE)
         if message:
           if message == "send-server-file\nend":
             f.close()
@@ -484,7 +488,10 @@ def remove_from_lists(connection, addr, username):
 def remove(connection, addr, username): 
   remove_from_lists(connection, addr, username)
   connection.send("You have been disconnected from the server")
-  print username + " has disconnected"
+  if username == "":
+    print "user from connection " + conn + " has disconnected"
+  else:
+    print username + " has disconnected"
   
 # actively listening for new clients who joining the server
 while True:

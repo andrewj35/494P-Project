@@ -1,4 +1,0 @@
-receive-server-file
-endreceive-server-file
-end
-nope
