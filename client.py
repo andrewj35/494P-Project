@@ -63,7 +63,7 @@ while True:
                   server.close();
                   exit();
                 elif data.endswith("receive-server-file\nend"):
-                  data.replace("receive-server-file\nend", "")
+                  data = data.replace("receive-server-file\nend", "")
                   f.write(data)
                   f.close()
                   break
