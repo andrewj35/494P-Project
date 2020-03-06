@@ -24,7 +24,7 @@ while True:
       if socks == server: 
         message = socks.recv(2048) 
         if len(message) == 0:
-          print "Connection to server lost!\n"
+          print "Connection to server lost!"
           server.close();
           exit();
         elif message == "You have been disconnected from the server":
