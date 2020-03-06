@@ -66,11 +66,11 @@ while True:
                 elif data.endswith("receive-server-file\nend"):
                   data = data.replace("receive-server-file\nend", "")
                   f.write(data)
-                  f.close()
                   break
                 else:
                   f.write(data)
               except:
+                f.close()
                 print "Connection to server lost!"
                 server.close();
                 exit()
