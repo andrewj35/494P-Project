@@ -13,6 +13,7 @@ IP_address = "127.0.0.50"
 #IP_address = socket.gethostbyname(hostname)
 Port = 6677
 server.connect((IP_address, Port)) 
+BUFF_SIZE = 2048
 
 while True: 
   try:
@@ -22,7 +23,7 @@ while True:
     
     for socks in read_sockets: 
       if socks == server: 
-        message = socks.recv(2048) 
+        message = socks.recv(BUFF_SIZE) 
         if len(message) == 0:
           print "Connection to server lost!"
           server.close();
@@ -46,10 +47,10 @@ while True:
         elif message[0:17] == "send-server-file\n":
           filename = message[17:]
           f = open(filename, 'rb')
-          l = f.read(1024)
+          l = f.read(BUFF_SIZE)
           while(l):
             server.send(l)
-            l = f.read(1024)
+            l = f.read(BUFF_SIZE)
           server.send("send-server-file\nend")
           f.close()
         elif message[0:20] == "receive-server-file\n":
@@ -57,7 +58,7 @@ while True:
           with open(filename, 'wb') as f:
             while True:
               try:
-                data = socks.recv(1024)
+                data = socks.recv(BUFF_SIZE)
                 if len(data) == 0:
                   print "Connection to server lost!\n"
                   server.close();

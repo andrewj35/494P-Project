@@ -3,6 +3,7 @@ import select
 import sys 
 import os
 import re
+import time
 from thread import *
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
@@ -55,30 +56,37 @@ def clientthread(conn, addr):
   conn.send("Enter username: ")
   while True:
     username = get_message(conn, addr, "", "")
-    username = re.sub(r"[\n\t]*", "",username)
-    if username not in usernames and len(username) >= 2:
-      try:
-        usernames.append(username)
-        break
-      except:
-        remove(conn, addr, "")
-        break
-    else:
-      if len(username) < 3:
-        conn.send("Username shold be 2 or more characters long!\nEnter new username: ")
-      elif username in usernames:
-        conn.send("Username already exists!\nEnter new username: ")
+    try:
+      username = re.sub(r"[\n\t]*", "",username)
+      if username not in usernames and len(username) >= 2:
+        try:
+          usernames.append(username)
+          break
+        except:
+          remove(conn, addr, "")
+          break
       else:
-        conn.send("Unknown error!")
-        break
+        if len(username) < 3 and username not in usernames:
+          conn.send("Username shold be 2 or more characters long!\nEnter new username: ")
+        elif len(username) < 3:
+          conn.send("Username shold be 2 or more characters long!\nEnter new username: ")
+        elif username in usernames:
+          conn.send("Username already exists!\nEnter new username: ")
+        else:
+          conn.send("Unknown error!")
+          break
+    except:
+      if conn in list_of_clients:
+        remove(conn, addr, "") 
+      break
 
   print username + " joined the server"
 # sends a message to this client
   conn.send("Welcome " + username + "!\nEnter /commands to see list of commands with their description.") 
   while True: 
+    message = conn.recv(2048) 
     try: 
-      message = conn.recv(2048) 
-      if message: 
+      if message and len(message) > 0:
         function_call(conn, addr, username, message)
       else: 
 # message having no content means the user has disconnected
@@ -155,10 +163,11 @@ def function_call(conn, addr, username, message):
 # input header of "" if no header required 
 def get_message(conn, addr, username, header):
   while True:
+    message = conn.recv(2048)
     try:
-      message = conn.recv(2048)
       if message:
         message_to_send = header + message 
+        return message_to_send
         break
       else:
         remove(conn, addr, username)
@@ -166,7 +175,6 @@ def get_message(conn, addr, username, header):
     except:
       remove(conn, addr, username)
       continue
-  return message_to_send
 
 # send message to specific user
 def private_message(conn, addr, username):
@@ -270,6 +278,7 @@ def copy_file(conn, addr, username):
     val = int(name)
     if val <= len(files) and len(files) > 0 and val > 0:
       send_file(conn, addr, username, files[val-1])
+      time.sleep(0.5)
       conn.send("File successfully copied!")
     else:
       conn.send("Invalid input!")
@@ -277,6 +286,24 @@ def copy_file(conn, addr, username):
     conn.send("ValueError")
   except:
     conn.send("Error!")
+
+# server sending file
+def send_file(conn, addr, username, filename):
+  busy.append(username)
+  cmd = "receive-server-file\n"
+  conn.send(cmd+filename)
+  f = open(filename, 'rb')
+  while True:
+    l = f.read(1024)
+    while(l):
+      conn.send(l)
+      l = f.read(1024)
+    if not l:
+      f.close()
+      break
+  conn.send(cmd + "end")
+  print filename + " copied into " + username + "'s directory"
+  busy.remove(username)
 
 # gets file from clients directory to upload to server directory
 def file_upload(conn, addr, username):
@@ -321,21 +348,6 @@ def get_file(conn, addr, username, filename):
       except:
         remove(conn, addr, username)
         continue
-
-# server sending file
-def send_file(conn, addr, username, filename):
-  busy.append(username)
-  cmd = "receive-server-file\n"
-  conn.send(cmd+filename)
-  f = open(filename, 'rb')
-  l = f.read(1024)
-  while(l):
-    conn.send(l)
-    l = f.read(1024)
-  f.close()
-  conn.send(cmd + "end")
-  print filename + " copied into " + username + "'s directory"
-  busy.remove(username)
 
 class chat_room:
   def __init__(self, name, creator, conn):
