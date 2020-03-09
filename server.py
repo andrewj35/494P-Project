@@ -8,11 +8,7 @@ from thread import *
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
-#IP_address = "0.0.0.0"
 IP_address = "127.0.0.50"
-# gets your IP address
-#hostname = socket.gethostname()
-#IP_address = socket.gethostbyname(hostname)
 Port = 6677
 server.bind((IP_address, Port)) 
   
@@ -62,7 +58,7 @@ def clientthread(conn, addr):
       username = get_message(conn, addr, "", "")
       username = re.sub(r"[\n\t]*", "",username)
       username = username.strip()
-      if username not in usernames and len(username) >= 2:
+      if username not in usernames and len(username) >= 2 and username != "Admin":
         try:
           usernames.append(username)
           break
@@ -70,7 +66,9 @@ def clientthread(conn, addr):
           remove(conn, addr, "")
           break
       else:
-        if len(username) < 3 and username not in usernames:
+        if username == "Admin":
+          conn.send("That name is reserved for the creator of the server! \nEnter a different username: ")
+        elif len(username) < 3 and username not in usernames:
           conn.send("Username shold be 2 or more characters long!\nEnter new username: ")
         elif username in usernames:
           conn.send("Username already exists!\nEnter new username: ")
@@ -250,8 +248,6 @@ def list_server_files(conn, addr, username, numbered):
 def broadcast_room(conn, addr, username):
   rooms = list_chatrooms(conn, addr, username, True)
   conn.send(rooms+"\nEnter the corresponding number of the chat room you would like to message: ")
-# TODO find out if this is good enough or if we need to do something like below (send to multiple rooms at once)
-#  conn.send(rooms+"\nTo send a message to multiple rooms separate numbers by spaces (i.e. '1 2 4')\nEnter the corresponding number(s) of chat room(s) you would like to message: ")
   name = re.sub(r"[\n\t]*", "", get_message(conn, addr, username, ""))
   try:
     val = int(name)
@@ -492,6 +488,26 @@ def remove(connection, addr, username):
     print "user from connection " + conn + " has disconnected"
   else:
     print username + " has disconnected"
+
+def adminthread():
+  while True:
+    try:
+      message = sys.stdin.readline()
+      if(message == "/close\n"):
+        broadcast("The admin has shutdown the server!", "", "", "Admin")
+        server.shutdown(socket.SHUT_RDWR)
+        server.close()
+        break
+      else:
+        message = re.sub(r"[\n\t]*", "", message)
+        message = "Admin: " + message
+        broadcast(message, "", "", "Admin")
+        sys.stdout.flush()
+    except:
+      print "adminthread error"
+      break
+
+start_new_thread(adminthread, ())
   
 # actively listening for new clients who joining the server
 while True:
@@ -505,7 +521,7 @@ while True:
 # creates and individual thread for every user  
     start_new_thread(clientthread,(conn,addr))     
   except:
-    print "\nServer Crashed!"
+    print "\nServer Closed!"
     break
 
 # if any connection was made
