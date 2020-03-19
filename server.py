@@ -472,7 +472,8 @@ def remove_from_lists(connection, addr, username):
   rooms_in = [x for x in roomnames if username in x.users]
   for each in rooms_in:
     each.users.remove(username)
-    each.conns.remove(conn)
+    if conn in each.conns:
+      each.conns.remove(conn)
   if connection in list_of_clients:
     list_of_clients.remove(connection) 
   if addr[0] in addrs: 
